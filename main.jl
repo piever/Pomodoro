@@ -1,4 +1,5 @@
 using REPL: TerminalMenus, Terminals
+using Dates: now, Second
 
 function with_raw_terminal(f)
     terminal = TerminalMenus.terminal
@@ -37,66 +38,36 @@ const times = [
     '🕦',
 ]
 
-struct Clock
-    start::Timer
-    stop::Timer
-end
-
-function stop(c::Clock)
-    close(c.stop)
-    close(c.start)
-    return
-end
-
-isticking(c::Clock) = isopen(c.start) || isopen(c.stop)
-isticking(::Nothing) = false
-
-mutable struct State
-    index::Int
-    isfirst::Bool
-end
-State() = State(1, true)
-
-function update!(st::State)
-    st.index %= length(times)
-    st.index += 1
-    st.isfirst = false
-    return st
-end
-
-function backspace(n::Integer)
-    for _ in 1:n
-        print('\b')
-    end
-end
-
 function start_clock(t::Real; interval::Real = 1)
-    st = State()
-    start = Timer(0; interval) do _
-        st.isfirst || backspace(2)
-        print(times[st.index])
-        update!(st)
+    t0 = now()
+    isfirst = Ref(true)
+    cycled = Iterators.cycle(times)
+    emojis = Iterators.Stateful(cycled)
+    return Timer(0; interval) do timer
+        isfirst[] ? (isfirst[] = false) : (print('\b'); print('\b'))
+        if (now() - t0) / Second(1) < t
+            emoji = popfirst!(emojis)
+            print(emoji)
+        else
+            close(timer)
+            print('🍅')
+            print('\a')
+        end
     end
-    stop = Timer(t) do _
-        close(start)
-        backspace(2)
-        print('🍅')
-        print('\a')
-    end
-    return Clock(start, stop)
 end
 
 function run_app(t::Real; interval::Real = 1)
     println("Press `Space` to start the clock! Press `q` to quit.")
 
-    open, clock = true, nothing
+    open, timer = true, nothing
 
     while open
         ch = read(stdin, Char)
+        isticking = !isnothing(timer) && isopen(timer)
         if isspace(ch)
-            isticking(clock) || (clock = start_clock(t; interval))
+            isticking || (timer = start_clock(t; interval))
         elseif lowercase(ch) == 'q'
-            isticking(clock) && stop(clock)
+            isticking && close(timer)
             print('\n')
             open = false
         end
