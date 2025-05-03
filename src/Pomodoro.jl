@@ -2,7 +2,7 @@ module Pomodoro
 
 using REPL.Terminals: TTYTerminal, raw!
 using Dates: now, Second
-using Markdown: @md_str, MD
+using Markdown: @md_str, MD, Code
 
 alert() = print("\a")
 emoji_backspace() = print("\b\b")
@@ -108,10 +108,21 @@ function run_app(t::Real; interval::Real = 1)
 end
 
 function (@main)(ARGS)
-    nminutes = parse(Float64, ARGS[1])
-    nseconds = 60 * nminutes
-    run_app(nseconds)
-    return 0
+    str = get(ARGS, 1, "25")
+    nminutes = tryparse(Float64, str)
+    if isnothing(nminutes)
+        code = Code(str)
+        msg = md"""
+        Could not understand $(code) as number of minutes.
+        """
+        print_md(msg)
+        println()
+        return 1
+    else
+        nseconds = 60 * nminutes
+        run_app(nseconds)
+        return 0
+    end
 end
 
 end
