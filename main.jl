@@ -1,41 +1,51 @@
 using REPL: TerminalMenus, Terminals
 using Dates: now, Second
+using Markdown: @md_str, MD
 
-function with_raw_terminal(f)
+alert() = print("\a")
+emoji_backspace() = print("\b\b")
+hide_cursor() = print("\033[?25l")
+show_cursor() = print("\033[?25h")
+
+function get_char()
     terminal = TerminalMenus.terminal
     try
+        hide_cursor()
         Terminals.raw!(terminal, true)
-        f()
+        read(stdin, Char)
     finally
         Terminals.raw!(terminal, false)
+        show_cursor()
     end
 end
 
+print_md(md::MD) = show(stdout, MIME"text/plain"(), md)
+
 const times = [
-    '🕛',
-    '🕧',
-    '🕐',
-    '🕜',
-    '🕑',
-    '🕝',
-    '🕒',
-    '🕞',
-    '🕓',
-    '🕟',
-    '🕔',
-    '🕠',
-    '🕕',
-    '🕡',
-    '🕖',
-    '🕢',
-    '🕗',
-    '🕣',
-    '🕘',
-    '🕤',
-    '🕙',
-    '🕥',
-    '🕚',
-    '🕦',
+    "🕛",
+    "🕧",
+    "🕐",
+    "🕜",
+    "🕑",
+    "🕝",
+    "🕒",
+    "🕞",
+    "🕓",
+    "🕟",
+    "🕔",
+    "🕠",
+    "🕕",
+    "🕡",
+    "🕖",
+    "🕢",
+    "🕗",
+    "🕣",
+    "🕘",
+    "🕤",
+    "🕙",
+    "🕥",
+    "🕚",
+    "🕦",
 ]
 
 function start_clock(t::Real; interval::Real = 1)
@@ -44,31 +54,46 @@ function start_clock(t::Real; interval::Real = 1)
     cycled = Iterators.cycle(times)
     emojis = Iterators.Stateful(cycled)
     return Timer(0; interval) do timer
-        isfirst[] ? (isfirst[] = false) : (print('\b'); print('\b'))
+        isfirst[] ? (isfirst[] = false) : emoji_backspace()
         if (now() - t0) / Second(1) < t
             emoji = popfirst!(emojis)
             print(emoji)
         else
             close(timer)
-            print('🍅')
-            print('\a')
+            print("🍅")
+            alert()
         end
     end
 end
 
 function run_app(t::Real; interval::Real = 1)
-    println("Press `Space` to start the clock! Press `q` to quit.")
+    msg = md"""
+    __Instructions__
+
+    Press `Enter` to start writing a message.
+    When you are finished, press `Enter` again to start the clock.
+    Press `q` to quit.
+    """
+    print_md(msg)
 
     open, timer = true, nothing
 
     while open
-        ch = read(stdin, Char)
+        ch = get_char()
         isticking = !isnothing(timer) && isopen(timer)
-        if isspace(ch)
-            isticking || (timer = start_clock(t; interval))
+
+        if !isticking && (ch == '\r')
+            println()
+            println()
+            print_md(md"__Task:__")
+            print(" ")
+            readline()
+            print_md(md"__Status:__")
+            print(" ")
+            timer = start_clock(t; interval)
         elseif lowercase(ch) == 'q'
             isticking && close(timer)
-            print('\n')
+            println()
             open = false
         end
     end
@@ -77,10 +102,6 @@ end
 function (@main)(args)
     nminutes = parse(Float64, args[1])
     nseconds = 60 * nminutes
-
-    with_raw_terminal() do
-        run_app(nseconds)
-    end
-
+    run_app(nseconds)
     return 0
 end
