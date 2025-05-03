@@ -1,3 +1,7 @@
+name = "Pomodoro"
+uuid = "40ff2a3d-bc41-44ec-b823-4c0cd082d2cf"
+version = "1.0.0-DEV"
+
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -8,3 +12,6 @@ Dates = "1.11"
 Markdown = "1.11"
 REPL = "1.11"
 julia = "1.11"
+
+[apps]
+pomodoro = {}
