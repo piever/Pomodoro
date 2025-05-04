@@ -4,30 +4,25 @@ Simple pomodoro clock app.
 
 ## Setup
 
-Install the [Julia](https://julialang.org/install/) programming language (minimum version 1.11).
-
-Navigate to the top level of the repository and install all the dependencies as follows.
+Install the [Julia](https://julialang.org/install/) programming language (minimum version 1.12, i.e., `juliaup add beta` at the moment).
+You also need to manually make `~/.julia/bin` available on the PATH environment.
 
 First start a Julia REPL. Then,
 
 ```julia-repl
-julia> ] # open Pkg mode
+julia> import Pkg # import package manager
 
-(@v1.11) pkg> activate . # activate the environment
-
-(Pomodoro) pkg> instantiate # install dependencies
+julia> Pkg.Apps.add(url = "https://github.com/piever/Pomodoro.jl") # install app
 ```
 
 Finally, exit the Julia REPL with `Ctrl + d`.
 
-## Launcing the app
+## Launching the app
 
 To launch the app, run the following command in the terminal:
 
 ```
-julia --project main.jl 25
+pomodoro 25
 ```
 
-Replace `25` with the number of minutes you wish to run the pomodo clock for (also accepts non-integer values, e.g., `2.5` would be two minutes and a half).
-
-
+Replace `25` with the number of minutes you wish to run the pomodoro clock for (also accepts non-integer values, e.g., `2.5` would be two minutes and a half).

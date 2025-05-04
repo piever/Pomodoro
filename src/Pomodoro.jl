@@ -17,7 +17,7 @@ end
 
 function get_char()
     terminal = default_terminal()
-    try
+    return try
         hide_cursor()
         raw!(terminal, true)
         read(stdin, Char)
@@ -144,6 +144,7 @@ function run_app(t::TimePeriod)
             break
         end
     end
+    return
 end
 
 function (@main)(ARGS)
