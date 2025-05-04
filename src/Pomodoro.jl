@@ -1,7 +1,7 @@
 module Pomodoro
 
 using REPL.Terminals: TTYTerminal, raw!
-using Dates: now, DateTime, Second
+using Dates: now, DateTime, Millisecond, Second, TimePeriod, canonicalize
 using Markdown: @md_str, MD, Code
 
 alert() = print("\a")
@@ -58,15 +58,15 @@ const times = [
 
 mutable struct State{T}
     t0::DateTime
-    dt::Float64
+    dt::Millisecond
     ispaused::Bool
     isfirst::Bool
     const emojis::T
 end
 
-function State(t::Real)
+function State(t::TimePeriod)
     t0 = now()
-    dt::Float64 = t
+    dt::Millisecond = t
     ispaused = false
     isfirst = true
     cycled = Iterators.cycle(times)
@@ -75,7 +75,7 @@ function State(t::Real)
 end
 
 function pause!(state::State)
-    state.dt -= (now() - state.t0) / Second(1)
+    state.dt -= now() - state.t0
     state.ispaused = true
     return state
 end
@@ -86,12 +86,12 @@ function resume!(state::State)
     return state
 end
 
-function start_timer(t::Real; interval::Real = 1)
+function start_timer(t::TimePeriod)
     state = State(t)
-    timer = Timer(0; interval) do _timer
+    timer = Timer(0; interval = 1) do _timer
         state.ispaused && return
         state.isfirst ? (state.isfirst = false) : emoji_backspace()
-        if (now() - state.t0) / Second(1) < state.dt
+        if now() - state.t0 < state.dt
             emoji = popfirst!(state.emojis)
             print(emoji)
         else
@@ -103,14 +103,16 @@ function start_timer(t::Real; interval::Real = 1)
     return timer, state
 end
 
-function run_app(t::Real; interval::Real = 1)
+function run_app(t::TimePeriod)
+    time = canonicalize(t)
+
     msg = md"""
     __Instructions__
 
+    The timer is set for $(time).\
     Press `Enter` to start writing a message.\
     When you are finished, press `Enter` again to start the clock.\
-    Press `p` to pause / restart the clock.
-    Press `q` to quit.
+    Press `p` to pause / restart the clock. Press `q` to quit.
     """
     print_md(msg)
 
@@ -132,7 +134,7 @@ function run_app(t::Real; interval::Real = 1)
             print_md(md"__Status:__")
             print(" ")
 
-            timer, state = start_timer(t; interval)
+            timer, state = start_timer(t)
         elseif lowercase(ch) == 'p'
             isrunning || continue
             state.ispaused ? resume!(state) : pause!(state)
@@ -156,8 +158,9 @@ function (@main)(ARGS)
         println()
         return 1
     else
-        nseconds = 60 * nminutes
-        run_app(nseconds)
+        nseconds = round(Int, 60 * nminutes)
+        t = Second(nseconds)
+        run_app(t)
         return 0
     end
 end
